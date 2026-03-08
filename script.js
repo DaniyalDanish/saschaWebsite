@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initDontClickBtn();
     initKonamiCode();
     initConsoleEasterEgg();
+    initIntroMusic();
 });
 
 /* ============================================
@@ -223,8 +224,9 @@ function initCursorTrail() {
     const hearts = ['❤️', '💖', '💕', '✨', '⭐', '💫'];
     let lastTime = 0;
     const throttleMs = 80; // spawn a heart every 80ms max
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-    document.addEventListener('mousemove', (e) => {
+    function spawnTrail(x, y) {
         const now = Date.now();
         if (now - lastTime < throttleMs) return;
         lastTime = now;
@@ -232,14 +234,24 @@ function initCursorTrail() {
         const heart = document.createElement('span');
         heart.classList.add('trail-heart');
         heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
-        heart.style.left = e.clientX + 'px';
-        heart.style.top = e.clientY + 'px';
+        heart.style.left = x + 'px';
+        heart.style.top = y + 'px';
         heart.style.fontSize = (Math.random() * 10 + 12) + 'px';
 
         trailContainer.appendChild(heart);
-
         setTimeout(() => heart.remove(), 1000);
+    }
+
+    document.addEventListener('mousemove', (e) => {
+        spawnTrail(e.clientX, e.clientY);
     });
+
+    if (isTouchDevice) {
+        document.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            spawnTrail(touch.clientX, touch.clientY);
+        }, { passive: true });
+    }
 }
 
 /* ============================================
@@ -443,6 +455,10 @@ function initFooterHearts() {
    PARALLAX EFFECT ON HERO
    ============================================ */
 function initParallax() {
+    // Skip parallax on touch devices — it needs mousemove
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (isTouchDevice) return;
+
     const hero = document.getElementById('hero');
     const heroContent = hero.querySelector('.hero-content');
 
@@ -715,6 +731,225 @@ function initKonamiCode() {
         }, 4000);
 
         // The konami body class stays forever (cursor change, extra animations)
+    }
+}
+
+/* ============================================
+   INTRO MUSIC (Web Audio API Synth Jingle)
+   ============================================ */
+function initIntroMusic() {
+    let audioCtx = null;
+    let isPlaying = false;
+    let musicNodes = [];
+    let loopInterval = null;
+
+    // Create the floating music toggle button
+    const btn = document.createElement('button');
+    btn.classList.add('music-toggle');
+    btn.setAttribute('aria-label', 'Toggle music');
+    btn.innerHTML = `
+        <span class="music-icon">
+            <span class="bars">
+                <span class="bar" style="height:6px"></span>
+                <span class="bar" style="height:6px"></span>
+                <span class="bar" style="height:6px"></span>
+                <span class="bar" style="height:6px"></span>
+            </span>
+        </span>
+    `;
+    document.body.appendChild(btn);
+
+    btn.addEventListener('click', () => {
+        if (isPlaying) {
+            stopMusic();
+        } else {
+            playMusic();
+        }
+    });
+
+    function createAudioContext() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        return audioCtx;
+    }
+
+    function playMusic() {
+        const ctx = createAudioContext();
+        isPlaying = true;
+        btn.classList.add('playing');
+
+        // Fun, upbeat melody — bouncy and catchy
+        // Notes as frequencies (C major pentatonic + extras)
+        const NOTE = {
+            C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00,
+            A4: 440.00, B4: 493.88, C5: 523.25, D5: 587.33, E5: 659.25,
+            G3: 196.00, A3: 220.00, B3: 246.94, F5: 698.46, G5: 783.99
+        };
+
+        // Main melody: fun, bouncy, loopable (in 8th notes, BPM ~140)
+        const bpm = 140;
+        const eighth = 60 / bpm / 2; // duration of an 8th note
+        const melody = [
+            { note: NOTE.C5, dur: 1 },
+            { note: NOTE.E5, dur: 1 },
+            { note: NOTE.G4, dur: 1 },
+            { note: NOTE.A4, dur: 1 },
+            { note: NOTE.E5, dur: 2 },
+            { note: NOTE.D5, dur: 1 },
+            { note: NOTE.C5, dur: 1 },
+
+            { note: NOTE.A4, dur: 1 },
+            { note: NOTE.G4, dur: 1 },
+            { note: NOTE.A4, dur: 1 },
+            { note: NOTE.C5, dur: 1 },
+            { note: NOTE.D5, dur: 2 },
+            { note: null,     dur: 2 }, // rest
+
+            { note: NOTE.E5, dur: 1 },
+            { note: NOTE.D5, dur: 1 },
+            { note: NOTE.C5, dur: 1 },
+            { note: NOTE.A4, dur: 1 },
+            { note: NOTE.G4, dur: 2 },
+            { note: NOTE.E4, dur: 1 },
+            { note: NOTE.G4, dur: 1 },
+
+            { note: NOTE.A4, dur: 1 },
+            { note: NOTE.C5, dur: 1 },
+            { note: NOTE.D5, dur: 1 },
+            { note: NOTE.E5, dur: 1 },
+            { note: NOTE.C5, dur: 3 },
+            { note: null,     dur: 1 }, // rest
+        ];
+
+        // Bass line (simple root notes, whole notes)
+        const bass = [
+            { note: NOTE.C4 / 2, dur: 8 },
+            { note: NOTE.A3 / 2, dur: 8 },
+            { note: NOTE.F4 / 2, dur: 8 },
+            { note: NOTE.G3 / 2, dur: 8 },
+        ];
+
+        function playSequence() {
+            if (!isPlaying) return;
+            const startTime = ctx.currentTime + 0.05;
+
+            // Master gain
+            const masterGain = ctx.createGain();
+            masterGain.gain.value = 0.3;
+            masterGain.connect(ctx.destination);
+            musicNodes.push(masterGain);
+
+            // Play melody
+            let melodyTime = startTime;
+            melody.forEach(({ note, dur }) => {
+                if (note !== null) {
+                    // Main osc (square for retro feel)
+                    const osc = ctx.createOscillator();
+                    osc.type = 'square';
+                    osc.frequency.value = note;
+
+                    const gain = ctx.createGain();
+                    gain.gain.setValueAtTime(0.15, melodyTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, melodyTime + dur * eighth - 0.02);
+
+                    osc.connect(gain);
+                    gain.connect(masterGain);
+
+                    osc.start(melodyTime);
+                    osc.stop(melodyTime + dur * eighth);
+                    musicNodes.push(osc, gain);
+
+                    // Add a soft triangle harmony an octave lower
+                    const osc2 = ctx.createOscillator();
+                    osc2.type = 'triangle';
+                    osc2.frequency.value = note / 2;
+
+                    const gain2 = ctx.createGain();
+                    gain2.gain.setValueAtTime(0.06, melodyTime);
+                    gain2.gain.exponentialRampToValueAtTime(0.01, melodyTime + dur * eighth - 0.02);
+
+                    osc2.connect(gain2);
+                    gain2.connect(masterGain);
+
+                    osc2.start(melodyTime);
+                    osc2.stop(melodyTime + dur * eighth);
+                    musicNodes.push(osc2, gain2);
+                }
+                melodyTime += dur * eighth;
+            });
+
+            // Play bass
+            let bassTime = startTime;
+            bass.forEach(({ note, dur }) => {
+                if (note !== null) {
+                    const osc = ctx.createOscillator();
+                    osc.type = 'triangle';
+                    osc.frequency.value = note;
+
+                    const gain = ctx.createGain();
+                    gain.gain.setValueAtTime(0.12, bassTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, bassTime + dur * eighth - 0.05);
+
+                    osc.connect(gain);
+                    gain.connect(masterGain);
+
+                    osc.start(bassTime);
+                    osc.stop(bassTime + dur * eighth);
+                    musicNodes.push(osc, gain);
+                }
+                bassTime += dur * eighth;
+            });
+
+            // Simple percussion (noise bursts on beats)
+            const totalDuration = melody.reduce((sum, n) => sum + n.dur, 0);
+            for (let i = 0; i < totalDuration; i += 2) {
+                const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.05, ctx.sampleRate);
+                const data = noiseBuffer.getChannelData(0);
+                for (let s = 0; s < data.length; s++) {
+                    data[s] = (Math.random() * 2 - 1) * 0.3;
+                }
+                const noise = ctx.createBufferSource();
+                noise.buffer = noiseBuffer;
+
+                const noiseGain = ctx.createGain();
+                noiseGain.gain.setValueAtTime(i % 4 === 0 ? 0.08 : 0.04, startTime + i * eighth);
+                noiseGain.gain.exponentialRampToValueAtTime(0.001, startTime + i * eighth + 0.05);
+
+                noise.connect(noiseGain);
+                noiseGain.connect(masterGain);
+                noise.start(startTime + i * eighth);
+                musicNodes.push(noise, noiseGain);
+            }
+
+            // Loop duration = total 8th notes * eighth duration
+            const loopDuration = totalDuration * eighth * 1000;
+            loopInterval = setTimeout(playSequence, loopDuration - 50);
+        }
+
+        playSequence();
+    }
+
+    function stopMusic() {
+        isPlaying = false;
+        btn.classList.remove('playing');
+
+        if (loopInterval) {
+            clearTimeout(loopInterval);
+            loopInterval = null;
+        }
+
+        // Gracefully disconnect all nodes
+        musicNodes.forEach(node => {
+            try {
+                if (node.stop) node.stop();
+                node.disconnect();
+            } catch (e) { /* already stopped */ }
+        });
+        musicNodes = [];
     }
 }
 
