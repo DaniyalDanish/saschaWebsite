@@ -741,7 +741,9 @@ function initIntroMusic() {
     let audioCtx = null;
     let isPlaying = false;
     let musicNodes = [];
-    let loopInterval = null;
+    let loopTimeout = null;
+    let compressor = null;
+    let masterGain = null;
 
     // Create the floating music toggle button
     const btn = document.createElement('button');
@@ -767,7 +769,7 @@ function initIntroMusic() {
         }
     });
 
-    function createAudioContext() {
+    function getAudioContext() {
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
@@ -778,178 +780,247 @@ function initIntroMusic() {
     }
 
     function playMusic() {
-        const ctx = createAudioContext();
+        const ctx = getAudioContext();
         isPlaying = true;
         btn.classList.add('playing');
 
-        // Fun, upbeat melody — bouncy and catchy
-        // Notes as frequencies (C major pentatonic + extras)
-        const NOTE = {
-            C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00,
-            A4: 440.00, B4: 493.88, C5: 523.25, D5: 587.33, E5: 659.25,
-            G3: 196.00, A3: 220.00, B3: 246.94, F5: 698.46, G5: 783.99
+        // Audio chain: oscillators -> gains -> compressor -> master gain -> destination
+        compressor = ctx.createDynamicsCompressor();
+        compressor.threshold.value = -20;
+        compressor.knee.value = 10;
+        compressor.ratio.value = 4;
+        compressor.attack.value = 0.003;
+        compressor.release.value = 0.1;
+
+        masterGain = ctx.createGain();
+        masterGain.gain.value = 0.75;
+
+        compressor.connect(masterGain);
+        masterGain.connect(ctx.destination);
+
+        // Notes (frequencies)
+        const N = {
+            C3: 130.81, D3: 146.83, E3: 164.81, F3: 174.61, G3: 196.00, A3: 220.00, B3: 246.94,
+            C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, B4: 493.88,
+            C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99
         };
 
-        // Main melody: fun, bouncy, loopable (in 8th notes, BPM ~140)
-        const bpm = 140;
-        const eighth = 60 / bpm / 2; // duration of an 8th note
+        const bpm = 132;
+        const beat = 60 / bpm;           // quarter note
+        const eighth = beat / 2;         // eighth note
+
+        // Catchy melody (think fun parade / circus energy)
+        // Each entry: [frequency, duration_in_eighths]  (null = rest)
         const melody = [
-            { note: NOTE.C5, dur: 1 },
-            { note: NOTE.E5, dur: 1 },
-            { note: NOTE.G4, dur: 1 },
-            { note: NOTE.A4, dur: 1 },
-            { note: NOTE.E5, dur: 2 },
-            { note: NOTE.D5, dur: 1 },
-            { note: NOTE.C5, dur: 1 },
+            [N.E5, 1], [N.D5, 1], [N.C5, 1], [N.D5, 1],
+            [N.E5, 1], [N.E5, 1], [N.E5, 2],
 
-            { note: NOTE.A4, dur: 1 },
-            { note: NOTE.G4, dur: 1 },
-            { note: NOTE.A4, dur: 1 },
-            { note: NOTE.C5, dur: 1 },
-            { note: NOTE.D5, dur: 2 },
-            { note: null,     dur: 2 }, // rest
+            [N.D5, 1], [N.D5, 1], [N.D5, 2],
+            [N.E5, 1], [N.G5, 1], [N.G5, 2],
 
-            { note: NOTE.E5, dur: 1 },
-            { note: NOTE.D5, dur: 1 },
-            { note: NOTE.C5, dur: 1 },
-            { note: NOTE.A4, dur: 1 },
-            { note: NOTE.G4, dur: 2 },
-            { note: NOTE.E4, dur: 1 },
-            { note: NOTE.G4, dur: 1 },
+            [N.E5, 1], [N.D5, 1], [N.C5, 1], [N.D5, 1],
+            [N.E5, 1], [N.E5, 1], [N.E5, 1], [N.C5, 1],
 
-            { note: NOTE.A4, dur: 1 },
-            { note: NOTE.C5, dur: 1 },
-            { note: NOTE.D5, dur: 1 },
-            { note: NOTE.E5, dur: 1 },
-            { note: NOTE.C5, dur: 3 },
-            { note: null,     dur: 1 }, // rest
+            [N.D5, 1], [N.D5, 1], [N.E5, 1], [N.D5, 1],
+            [N.C5, 2], [null, 2],
         ];
 
-        // Bass line (simple root notes, whole notes)
-        const bass = [
-            { note: NOTE.C4 / 2, dur: 8 },
-            { note: NOTE.A3 / 2, dur: 8 },
-            { note: NOTE.F4 / 2, dur: 8 },
-            { note: NOTE.G3 / 2, dur: 8 },
+        // Bass line (higher octave so phone speakers can play it)
+        const bassLine = [
+            [N.C4, 4], [N.C4, 4],
+            [N.G3, 4], [N.C4, 4],
+            [N.C4, 4], [N.A3, 4],
+            [N.F3, 4], [N.G3, 4],
         ];
 
-        function playSequence() {
+        // Chord stabs (played as short arpeggios on off-beats)
+        const chords = [
+            // bar 1-2: C major (C E G)
+            { notes: [N.C4, N.E4, N.G4], start: 0,  dur: 8 },
+            { notes: [N.C4, N.E4, N.G4], start: 8,  dur: 8 },
+            // bar 3-4: C major, G major
+            { notes: [N.C4, N.E4, N.G4], start: 16, dur: 8 },
+            { notes: [N.A3, N.C4, N.E4], start: 24, dur: 8 },
+        ];
+
+        const totalEighths = melody.reduce((s, m) => s + m[1], 0);
+        const loopDuration = totalEighths * eighth;
+
+        function scheduleLoop() {
             if (!isPlaying) return;
-            const startTime = ctx.currentTime + 0.05;
+            const t0 = ctx.currentTime + 0.05;
 
-            // Master gain
-            const masterGain = ctx.createGain();
-            masterGain.gain.value = 0.3;
-            masterGain.connect(ctx.destination);
-            musicNodes.push(masterGain);
+            // --- MELODY (sawtooth + slight detune for fatness) ---
+            let t = t0;
+            melody.forEach(([freq, dur]) => {
+                const noteDur = dur * eighth;
+                if (freq !== null) {
+                    // Primary sawtooth
+                    const osc1 = ctx.createOscillator();
+                    osc1.type = 'sawtooth';
+                    osc1.frequency.value = freq;
+                    osc1.detune.value = -6;
 
-            // Play melody
-            let melodyTime = startTime;
-            melody.forEach(({ note, dur }) => {
-                if (note !== null) {
-                    // Main osc (square for retro feel)
-                    const osc = ctx.createOscillator();
-                    osc.type = 'square';
-                    osc.frequency.value = note;
-
-                    const gain = ctx.createGain();
-                    gain.gain.setValueAtTime(0.15, melodyTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, melodyTime + dur * eighth - 0.02);
-
-                    osc.connect(gain);
-                    gain.connect(masterGain);
-
-                    osc.start(melodyTime);
-                    osc.stop(melodyTime + dur * eighth);
-                    musicNodes.push(osc, gain);
-
-                    // Add a soft triangle harmony an octave lower
+                    // Detuned copy for chorus
                     const osc2 = ctx.createOscillator();
-                    osc2.type = 'triangle';
-                    osc2.frequency.value = note / 2;
+                    osc2.type = 'sawtooth';
+                    osc2.frequency.value = freq;
+                    osc2.detune.value = 6;
 
-                    const gain2 = ctx.createGain();
-                    gain2.gain.setValueAtTime(0.06, melodyTime);
-                    gain2.gain.exponentialRampToValueAtTime(0.01, melodyTime + dur * eighth - 0.02);
+                    const g = ctx.createGain();
+                    g.gain.setValueAtTime(0.22, t);
+                    g.gain.setValueAtTime(0.22, t + noteDur * 0.7);
+                    g.gain.exponentialRampToValueAtTime(0.005, t + noteDur - 0.01);
 
-                    osc2.connect(gain2);
-                    gain2.connect(masterGain);
+                    osc1.connect(g);
+                    osc2.connect(g);
+                    g.connect(compressor);
 
-                    osc2.start(melodyTime);
-                    osc2.stop(melodyTime + dur * eighth);
-                    musicNodes.push(osc2, gain2);
+                    osc1.start(t);
+                    osc1.stop(t + noteDur);
+                    osc2.start(t);
+                    osc2.stop(t + noteDur);
+                    musicNodes.push(osc1, osc2, g);
                 }
-                melodyTime += dur * eighth;
+                t += noteDur;
             });
 
-            // Play bass
-            let bassTime = startTime;
-            bass.forEach(({ note, dur }) => {
-                if (note !== null) {
+            // --- BASS (triangle, nice and warm) ---
+            let bt = t0;
+            bassLine.forEach(([freq, dur]) => {
+                const noteDur = dur * eighth;
+                if (freq !== null) {
                     const osc = ctx.createOscillator();
                     osc.type = 'triangle';
-                    osc.frequency.value = note;
+                    osc.frequency.value = freq;
 
-                    const gain = ctx.createGain();
-                    gain.gain.setValueAtTime(0.12, bassTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, bassTime + dur * eighth - 0.05);
+                    const g = ctx.createGain();
+                    g.gain.setValueAtTime(0.35, bt);
+                    g.gain.setValueAtTime(0.30, bt + noteDur * 0.6);
+                    g.gain.exponentialRampToValueAtTime(0.005, bt + noteDur - 0.02);
 
-                    osc.connect(gain);
-                    gain.connect(masterGain);
+                    osc.connect(g);
+                    g.connect(compressor);
 
-                    osc.start(bassTime);
-                    osc.stop(bassTime + dur * eighth);
-                    musicNodes.push(osc, gain);
+                    osc.start(bt);
+                    osc.stop(bt + noteDur);
+                    musicNodes.push(osc, g);
                 }
-                bassTime += dur * eighth;
+                bt += noteDur;
             });
 
-            // Simple percussion (noise bursts on beats)
-            const totalDuration = melody.reduce((sum, n) => sum + n.dur, 0);
-            for (let i = 0; i < totalDuration; i += 2) {
-                const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.05, ctx.sampleRate);
-                const data = noiseBuffer.getChannelData(0);
-                for (let s = 0; s < data.length; s++) {
-                    data[s] = (Math.random() * 2 - 1) * 0.3;
+            // --- CHORD PADS (soft square chords for warmth) ---
+            chords.forEach(({ notes, start, dur }) => {
+                const ct = t0 + start * eighth;
+                const cDur = dur * eighth;
+                notes.forEach(freq => {
+                    const osc = ctx.createOscillator();
+                    osc.type = 'square';
+                    osc.frequency.value = freq;
+
+                    const g = ctx.createGain();
+                    g.gain.setValueAtTime(0.05, ct);
+                    g.gain.setValueAtTime(0.05, ct + cDur * 0.8);
+                    g.gain.exponentialRampToValueAtTime(0.002, ct + cDur - 0.01);
+
+                    osc.connect(g);
+                    g.connect(compressor);
+
+                    osc.start(ct);
+                    osc.stop(ct + cDur);
+                    musicNodes.push(osc, g);
+                });
+            });
+
+            // --- PERCUSSION (kicks + hi-hats via noise) ---
+            for (let i = 0; i < totalEighths; i++) {
+                const pt = t0 + i * eighth;
+                const isKick = (i % 4 === 0);
+                const isHihat = (i % 2 === 0);
+
+                if (isKick) {
+                    // Kick: short sine sweep
+                    const kickOsc = ctx.createOscillator();
+                    kickOsc.type = 'sine';
+                    kickOsc.frequency.setValueAtTime(300, pt);
+                    kickOsc.frequency.exponentialRampToValueAtTime(60, pt + 0.12);
+
+                    const kickG = ctx.createGain();
+                    kickG.gain.setValueAtTime(0.4, pt);
+                    kickG.gain.exponentialRampToValueAtTime(0.005, pt + 0.15);
+
+                    kickOsc.connect(kickG);
+                    kickG.connect(compressor);
+                    kickOsc.start(pt);
+                    kickOsc.stop(pt + 0.15);
+                    musicNodes.push(kickOsc, kickG);
                 }
-                const noise = ctx.createBufferSource();
-                noise.buffer = noiseBuffer;
 
-                const noiseGain = ctx.createGain();
-                noiseGain.gain.setValueAtTime(i % 4 === 0 ? 0.08 : 0.04, startTime + i * eighth);
-                noiseGain.gain.exponentialRampToValueAtTime(0.001, startTime + i * eighth + 0.05);
+                if (isHihat) {
+                    // Hi-hat: short noise burst
+                    const bufLen = Math.floor(ctx.sampleRate * 0.04);
+                    const noiseBuf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+                    const data = noiseBuf.getChannelData(0);
+                    for (let s = 0; s < bufLen; s++) {
+                        data[s] = (Math.random() * 2 - 1);
+                    }
+                    const noise = ctx.createBufferSource();
+                    noise.buffer = noiseBuf;
 
-                noise.connect(noiseGain);
-                noiseGain.connect(masterGain);
-                noise.start(startTime + i * eighth);
-                musicNodes.push(noise, noiseGain);
+                    // Bandpass filter to make it sound like a hi-hat
+                    const hiFilter = ctx.createBiquadFilter();
+                    hiFilter.type = 'bandpass';
+                    hiFilter.frequency.value = 8000;
+                    hiFilter.Q.value = 1;
+
+                    const hg = ctx.createGain();
+                    hg.gain.setValueAtTime(isKick ? 0.08 : 0.12, pt);
+                    hg.gain.exponentialRampToValueAtTime(0.001, pt + 0.04);
+
+                    noise.connect(hiFilter);
+                    hiFilter.connect(hg);
+                    hg.connect(compressor);
+                    noise.start(pt);
+                    musicNodes.push(noise, hiFilter, hg);
+                }
             }
 
-            // Loop duration = total 8th notes * eighth duration
-            const loopDuration = totalDuration * eighth * 1000;
-            loopInterval = setTimeout(playSequence, loopDuration - 50);
+            // Schedule next loop
+            loopTimeout = setTimeout(scheduleLoop, (loopDuration - 0.1) * 1000);
         }
 
-        playSequence();
+        scheduleLoop();
     }
 
     function stopMusic() {
         isPlaying = false;
         btn.classList.remove('playing');
 
-        if (loopInterval) {
-            clearTimeout(loopInterval);
-            loopInterval = null;
+        if (loopTimeout) {
+            clearTimeout(loopTimeout);
+            loopTimeout = null;
         }
 
-        // Gracefully disconnect all nodes
-        musicNodes.forEach(node => {
+        // Fade out gracefully
+        if (masterGain && audioCtx) {
             try {
-                if (node.stop) node.stop();
-                node.disconnect();
-            } catch (e) { /* already stopped */ }
-        });
-        musicNodes = [];
+                masterGain.gain.setValueAtTime(masterGain.gain.value, audioCtx.currentTime);
+                masterGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+            } catch (e) { /* ignore */ }
+        }
+
+        // Clean up nodes after fade
+        setTimeout(() => {
+            musicNodes.forEach(node => {
+                try {
+                    if (node.stop) node.stop();
+                    node.disconnect();
+                } catch (e) { /* already stopped */ }
+            });
+            musicNodes = [];
+            if (compressor) { try { compressor.disconnect(); } catch(e) {} compressor = null; }
+            if (masterGain) { try { masterGain.disconnect(); } catch(e) {} masterGain = null; }
+        }, 350);
     }
 }
 
