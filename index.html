@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE SASCHA EXPERIENCE</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- CONFETTI CANVAS -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- CURSOR TRAIL CONTAINER -->
+    <div id="cursor-trail"></div>
+
+    <!-- KONAMI CODE OVERLAY (hidden) -->
+    <div id="konami-overlay" class="konami-overlay hidden">
+        <div class="konami-content">
+            <h2 class="konami-title">ULTIMATE SASCHA MODE</h2>
+            <p class="konami-subtitle">A C T I V A T E D</p>
+            <p class="konami-hint">You found the secret! You absolute legend.</p>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- HERO SECTION -->
+    <!-- ============================================ -->
+    <section id="hero" class="hero">
+        <div class="hero-bg-emojis" id="emoji-container"></div>
+        <div class="hero-content">
+            <h1 class="hero-title" id="hero-title">
+                <span class="letter" style="--i:0">T</span><span class="letter" style="--i:1">H</span><span class="letter" style="--i:2">E</span>
+                <span class="letter space" style="--i:3">&nbsp;</span>
+                <span class="letter highlight" style="--i:4">S</span><span class="letter highlight" style="--i:5">A</span><span class="letter highlight" style="--i:6">S</span><span class="letter highlight" style="--i:7">C</span><span class="letter highlight" style="--i:8">H</span><span class="letter highlight" style="--i:9">A</span>
+                <span class="letter space" style="--i:10">&nbsp;</span>
+                <span class="letter" style="--i:11">E</span><span class="letter" style="--i:12">X</span><span class="letter" style="--i:13">P</span><span class="letter" style="--i:14">E</span><span class="letter" style="--i:15">R</span><span class="letter" style="--i:16">I</span><span class="letter" style="--i:17">E</span><span class="letter" style="--i:18">N</span><span class="letter" style="--i:19">C</span><span class="letter" style="--i:20">E</span>
+            </h1>
+            <div class="typewriter-container">
+                <p class="typewriter" id="typewriter"></p>
+                <span class="cursor">|</span>
+            </div>
+            <p class="hero-subtitle-small">Viewer discretion advised. Side effects may include: uncontrollable laughter, sudden cravings for doner, and an inexplicable urge to pet ponies.</p>
+            <div class="hero-cta">
+                <a href="#gallery" class="cta-button" id="enter-btn">ENTER IF YOU DARE</a>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <span>scroll down (if you can handle it)</span>
+            <div class="scroll-arrow">&#8595;</div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- LOADING FAKE SCREEN (joke section) -->
+    <!-- ============================================ -->
+    <section id="loading-section" class="loading-section">
+        <div class="loading-content reveal">
+            <h2 class="section-title wobble-title">LOADING SASCHA...</h2>
+            <div class="fake-progress-bar">
+                <div class="fake-progress-fill" id="fake-progress"></div>
+            </div>
+            <div class="loading-messages" id="loading-messages">
+                <p>Calibrating blurriness levels...</p>
+                <p>Consulting the doner oracle...</p>
+                <p>Downloading extra awesomeness...</p>
+                <p>Asking the pony for permission...</p>
+                <p>Rendering maximum Sascha energy...</p>
+                <p class="loading-done">SASCHA LOADED SUCCESSFULLY</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- GALLERY - "The Sascha Collection" -->
+    <!-- ============================================ -->
+    <section id="gallery" class="gallery-section">
+        <h2 class="section-title wobble-title reveal">
+            THE SASCHA COLLECTION
+            <span class="title-subtitle">A curated exhibition of motion blur, doner, and vibes</span>
+        </h2>
+
+        <div class="gallery-grid">
+            <!-- Card 1: Blurry Cafe -->
+            <div class="photo-card reveal" data-direction="left">
+                <div class="photo-wrapper">
+                    <img src="content/sascha-cafe.jpg" alt="Sascha at cafe" loading="lazy">
+                    <div class="photo-flash"></div>
+                    <div class="photo-badge">BLURRY QUEEN</div>
+                </div>
+                <div class="photo-caption">
+                    <h3>Exhibit A: The Tremor</h3>
+                    <p>Every camera fears her... they literally shake just looking at her. Scientists have studied this phenomenon. They gave up.</p>
+                </div>
+            </div>
+
+            <!-- Card 2: Berlin -->
+            <div class="photo-card reveal" data-direction="right">
+                <div class="photo-wrapper">
+                    <img src="content/sascha-berlin.jpg" alt="Sascha at Brandenburg Gate" loading="lazy">
+                    <div class="photo-flash"></div>
+                    <div class="photo-badge">MOTION ART</div>
+                </div>
+                <div class="photo-caption">
+                    <h3>Exhibit B: Brandenburg Blur</h3>
+                    <p>Even the Brandenburg Gate was starstruck. The gate has been standing for 200+ years and STILL couldn't hold still for this photo.</p>
+                </div>
+            </div>
+
+            <!-- Card 3: Doner -->
+            <div class="photo-card reveal" data-direction="left">
+                <div class="photo-wrapper">
+                    <img src="content/sascha-doner.jpg" alt="Sascha with doner" loading="lazy">
+                    <div class="photo-flash"></div>
+                    <div class="photo-badge rotating-badge">TRUE LOVE</div>
+                </div>
+                <div class="photo-caption">
+                    <h3>Exhibit C: The Love Story</h3>
+                    <p>Her one true love. The doner spit. Look at that smile. Look at that meat. A romance novel waiting to be written. Sorry to everyone else.</p>
+                </div>
+            </div>
+
+            <!-- Card 4: Restaurant -->
+            <div class="photo-card reveal" data-direction="right">
+                <div class="photo-wrapper">
+                    <img src="content/sascha-restaurant.jpg" alt="Sascha at restaurant" loading="lazy">
+                    <div class="photo-flash"></div>
+                    <div class="photo-badge">RARE SIGHTING</div>
+                </div>
+                <div class="photo-caption">
+                    <h3>Exhibit D: The Rare Moment of Stillness</h3>
+                    <p>National Geographic spent 3 years trying to capture Sascha not moving. This is the only frame that came out non-blurry. They won a Pulitzer.</p>
+                </div>
+            </div>
+
+            <!-- Card 5: Dinner with pasta -->
+            <div class="photo-card reveal" data-direction="left">
+                <div class="photo-wrapper">
+                    <img src="content/sascha-dinner.jpg" alt="Sascha at fancy dinner" loading="lazy">
+                    <div class="photo-flash"></div>
+                    <div class="photo-badge">FANCY</div>
+                </div>
+                <div class="photo-caption">
+                    <h3>Exhibit E: The Connoisseur</h3>
+                    <p>Pasta? Check. Wine? Check. Bread basket she's already demolished? Check. This is what peak dining looks like and you may not like it.</p>
+                </div>
+            </div>
+
+            <!-- Card 6: Pasta with glasses -->
+            <div class="photo-card reveal" data-direction="right">
+                <div class="photo-wrapper">
+                    <img src="content/sascha-pasta.jpg" alt="Sascha cheers with wine" loading="lazy">
+                    <div class="photo-flash"></div>
+                    <div class="photo-badge">CHEERS</div>
+                </div>
+                <div class="photo-caption">
+                    <h3>Exhibit F: The Intellectual</h3>
+                    <p>Put on the smart glasses. Ordered pasta. Raised a glass. This is the energy of someone who has life COMPLETELY figured out. (She does not.)</p>
+                </div>
+            </div>
+
+            <!-- Card 7: Epic Jump -->
+            <div class="photo-card photo-card-wide reveal" data-direction="bottom">
+                <div class="photo-wrapper">
+                    <img src="content/sascha-epic-jump.jpg" alt="Epic sunset jump" loading="lazy">
+                    <div class="photo-flash"></div>
+                    <div class="photo-badge">ICONIC</div>
+                </div>
+                <div class="photo-caption">
+                    <h3>Exhibit G: Defying Gravity</h3>
+                    <p>Some people take sunset photos. Sascha BECOMES the sunset. NASA reportedly contacted her after this photo to discuss anti-gravity research.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- EVOLUTION SECTION -->
+    <!-- ============================================ -->
+    <section id="evolution" class="evolution-section">
+        <h2 class="section-title wobble-title reveal">
+            THE SASCHA EVOLUTION
+            <span class="title-subtitle">A brief history of absolute chaos</span>
+        </h2>
+
+        <div class="evolution-timeline">
+            <div class="evolution-card reveal" data-direction="left">
+                <div class="evo-photo">
+                    <img src="content/sascha-childhood.jpg" alt="Young Sascha" loading="lazy">
+                </div>
+                <div class="evo-label">THE ORIGIN STORY</div>
+                <p class="evo-text">Already plotting world domination from the couch. The other kids had no idea what was coming.</p>
+            </div>
+
+            <div class="evolution-card reveal" data-direction="right">
+                <div class="evo-photo">
+                    <img src="content/sascha-backbend.jpg" alt="Sascha doing backbend" loading="lazy">
+                </div>
+                <div class="evo-label">THE FLEXIBILITY ARC</div>
+                <p class="evo-text">Casually defying the laws of anatomy in a field. The grass has never recovered. Neither have our spines just looking at this.</p>
+            </div>
+
+            <div class="evolution-card reveal" data-direction="left">
+                <div class="evo-photo">
+                    <img src="content/sascha-jumping.jpg" alt="Sascha jumping over railing" loading="lazy">
+                </div>
+                <div class="evo-label">THE PARKOUR PHASE</div>
+                <p class="evo-text">Obstacles? Sascha doesn't know the meaning of the word. Literally. She just jumps over everything. The 30 zone sign is impressed.</p>
+            </div>
+
+            <div class="evolution-card reveal" data-direction="right">
+                <div class="evo-photo">
+                    <img src="content/sascha-sup.jpg" alt="Sascha paddleboarding" loading="lazy">
+                </div>
+                <div class="evo-label">THE AQUATIC ERA</div>
+                <p class="evo-text">Conquering land wasn't enough. She took to the waters. The fish are scared. The paddle is honored. The lake surrendered immediately.</p>
+            </div>
+
+            <div class="evolution-card reveal" data-direction="left">
+                <div class="evo-photo">
+                    <img src="content/sascha-kitchen.jpg" alt="Sascha in kitchen" loading="lazy">
+                </div>
+                <div class="evo-label">CURRENT FORM</div>
+                <p class="evo-text">Final evolution achieved. Standing in the kitchen. Radiating pure, unbothered energy. The slippers are doing 90% of the work here.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- FUN FACTS SECTION -->
+    <!-- ============================================ -->
+    <section id="facts" class="facts-section">
+        <h2 class="section-title wobble-title reveal">
+            THINGS YOU SHOULD KNOW
+            <span class="title-subtitle">Certified facts. Do not question them.</span>
+        </h2>
+
+        <div class="facts-grid">
+            <div class="fact-card reveal">
+                <div class="fact-emoji">&#x1F32F;</div>
+                <h3>Professional Doner Taste-Tester</h3>
+                <p>(Self-appointed. Has business cards. They're also blurry.)</p>
+            </div>
+            <div class="fact-card reveal">
+                <div class="fact-emoji">&#x1F4F8;</div>
+                <h3>Has NEVER Taken a Non-Blurry Photo</h3>
+                <p>It's not a bug, it's a feature. She vibrates at a frequency too fast for mortal cameras.</p>
+            </div>
+            <div class="fact-card reveal">
+                <div class="fact-emoji">&#x1F3D9;</div>
+                <h3>Berlin's #1 Resident</h3>
+                <p>(Source: trust me bro. Also the Brandenburg Gate nodded when I said this.)</p>
+            </div>
+            <div class="fact-card reveal">
+                <div class="fact-emoji">&#x1F434;</div>
+                <h3>Knows a Pony</h3>
+                <p>That's literally it. That's the flex. You DON'T know a pony. Think about that.</p>
+            </div>
+            <div class="fact-card reveal">
+                <div class="fact-emoji">&#x2615;</div>
+                <h3>Makes Any Cafe 200% More Fun</h3>
+                <p>Just by existing. Cafes have tried to hire her as ambiance. She declined. Too busy being blurry.</p>
+            </div>
+            <div class="fact-card reveal">
+                <div class="fact-emoji">&#x1F938;</div>
+                <h3>Can Do a Backbend</h3>
+                <p>YOUR spine could never. Mine could never. No one's spine could. She's built different (structurally).</p>
+            </div>
+            <div class="fact-card reveal">
+                <div class="fact-emoji">&#x1F3C4;</div>
+                <h3>SUP Champion</h3>
+                <p>Stands on water like it's a normal thing to do. Jesus walked on water but did he paddleboard? Didn't think so.</p>
+            </div>
+            <div class="fact-card reveal">
+                <div class="fact-emoji">&#x1F9F6;</div>
+                <h3>Crochets Her Own Hats</h3>
+                <p>Because buying hats is for people who don't have Sascha-level energy. Homemade drip only.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- TICKER / MARQUEE SECTION -->
+    <!-- ============================================ -->
+    <section id="ticker" class="ticker-section">
+        <h2 class="section-title wobble-title reveal">REASONS SHE'S AMAZING</h2>
+        <p class="ticker-disclaimer reveal">(this list is incomplete. you can help by expanding it.)</p>
+
+        <div class="marquee-container">
+            <div class="marquee-row marquee-forward">
+                <div class="marquee-content">
+                    <span class="marquee-tag tag-pink">great smile</span>
+                    <span class="marquee-tag tag-blue">doner connoisseur</span>
+                    <span class="marquee-tag tag-yellow">blur master</span>
+                    <span class="marquee-tag tag-green">pony whisperer</span>
+                    <span class="marquee-tag tag-pink">makes everything fun</span>
+                    <span class="marquee-tag tag-blue">Berlin's finest</span>
+                    <span class="marquee-tag tag-yellow">cafe regular</span>
+                    <span class="marquee-tag tag-green">scarf game strong</span>
+                    <span class="marquee-tag tag-pink">pasta enthusiast</span>
+                    <span class="marquee-tag tag-blue">gravity denier</span>
+                    <span class="marquee-tag tag-yellow">wine appreciator</span>
+                    <span class="marquee-tag tag-green">dog cuddler</span>
+                    <!-- Duplicate for seamless loop -->
+                    <span class="marquee-tag tag-pink">great smile</span>
+                    <span class="marquee-tag tag-blue">doner connoisseur</span>
+                    <span class="marquee-tag tag-yellow">blur master</span>
+                    <span class="marquee-tag tag-green">pony whisperer</span>
+                    <span class="marquee-tag tag-pink">makes everything fun</span>
+                    <span class="marquee-tag tag-blue">Berlin's finest</span>
+                    <span class="marquee-tag tag-yellow">cafe regular</span>
+                    <span class="marquee-tag tag-green">scarf game strong</span>
+                    <span class="marquee-tag tag-pink">pasta enthusiast</span>
+                    <span class="marquee-tag tag-blue">gravity denier</span>
+                    <span class="marquee-tag tag-yellow">wine appreciator</span>
+                    <span class="marquee-tag tag-green">dog cuddler</span>
+                </div>
+            </div>
+            <div class="marquee-row marquee-reverse">
+                <div class="marquee-content">
+                    <span class="marquee-tag tag-green">SUP queen</span>
+                    <span class="marquee-tag tag-pink">hat crocheter</span>
+                    <span class="marquee-tag tag-blue">parkour kid</span>
+                    <span class="marquee-tag tag-yellow">sunset jumper</span>
+                    <span class="marquee-tag tag-green">kitchen vibes</span>
+                    <span class="marquee-tag tag-pink">backbend legend</span>
+                    <span class="marquee-tag tag-blue">friend magnet</span>
+                    <span class="marquee-tag tag-yellow">chaos coordinator</span>
+                    <span class="marquee-tag tag-green">professionally unbothered</span>
+                    <span class="marquee-tag tag-pink">main character</span>
+                    <span class="marquee-tag tag-blue">slipper fashionista</span>
+                    <span class="marquee-tag tag-yellow">bread basket destroyer</span>
+                    <!-- Duplicate for seamless loop -->
+                    <span class="marquee-tag tag-green">SUP queen</span>
+                    <span class="marquee-tag tag-pink">hat crocheter</span>
+                    <span class="marquee-tag tag-blue">parkour kid</span>
+                    <span class="marquee-tag tag-yellow">sunset jumper</span>
+                    <span class="marquee-tag tag-green">kitchen vibes</span>
+                    <span class="marquee-tag tag-pink">backbend legend</span>
+                    <span class="marquee-tag tag-blue">friend magnet</span>
+                    <span class="marquee-tag tag-yellow">chaos coordinator</span>
+                    <span class="marquee-tag tag-green">professionally unbothered</span>
+                    <span class="marquee-tag tag-pink">main character</span>
+                    <span class="marquee-tag tag-blue">slipper fashionista</span>
+                    <span class="marquee-tag tag-yellow">bread basket destroyer</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- PONY SECTION -->
+    <!-- ============================================ -->
+    <section id="pony" class="pony-section">
+        <div class="pony-sparkles" id="pony-sparkles"></div>
+        <h2 class="section-title wobble-title reveal">HER SPIRIT ANIMAL</h2>
+        <div class="pony-container reveal">
+            <div class="pony-photo-wrapper">
+                <img src="content/sascha-pony.jpg" alt="Majestic pony" class="pony-photo" loading="lazy">
+            </div>
+        </div>
+        <div class="pony-text reveal">
+            <p class="pony-dramatic">This majestic creature represents everything Sascha stands for:</p>
+            <div class="pony-traits">
+                <span class="pony-trait" style="--delay: 0">Fluffy.</span>
+                <span class="pony-trait" style="--delay: 1">Unbothered.</span>
+                <span class="pony-trait" style="--delay: 2">Iconic.</span>
+            </div>
+            <p class="pony-footnote">* The pony has not confirmed or denied this association. We did not ask. We do not plan to.</p>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- TESTIMONIALS (Fake & Absurd) -->
+    <!-- ============================================ -->
+    <section id="testimonials" class="testimonials-section">
+        <h2 class="section-title wobble-title reveal">
+            WHAT PEOPLE ARE SAYING
+            <span class="title-subtitle">100% real quotes. Do not verify.</span>
+        </h2>
+        <div class="testimonials-carousel" id="testimonials-carousel">
+            <div class="testimonial-card active">
+                <p class="testimonial-quote">"I owe everything to Sascha. My career, my happiness, my perfectly al dente pasta."</p>
+                <p class="testimonial-author">- Albert Einstein (unverified)</p>
+            </div>
+            <div class="testimonial-card">
+                <p class="testimonial-quote">"Sascha could beat me at chess. I don't want to talk about it."</p>
+                <p class="testimonial-author">- Magnus Carlsen (probably)</p>
+            </div>
+            <div class="testimonial-card">
+                <p class="testimonial-quote">"An absolute unit. The most iconic human I've never met."</p>
+                <p class="testimonial-author">- The Entire Internet</p>
+            </div>
+            <div class="testimonial-card">
+                <p class="testimonial-quote">"She petted me once. I have not been the same since. I am forever changed."</p>
+                <p class="testimonial-author">- The Pony</p>
+            </div>
+            <div class="testimonial-card">
+                <p class="testimonial-quote">"I have been standing here for 200 years and Sascha is the most impressive thing I've seen."</p>
+                <p class="testimonial-author">- Brandenburg Gate</p>
+            </div>
+            <div class="testimonial-card">
+                <p class="testimonial-quote">"She ordered me with extra sauce. No one has ever understood me like that."</p>
+                <p class="testimonial-author">- A Doner Kebab</p>
+            </div>
+        </div>
+        <div class="testimonial-dots" id="testimonial-dots"></div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- INTERACTIVE ZONE -->
+    <!-- ============================================ -->
+    <section id="interactive" class="interactive-section">
+        <h2 class="section-title wobble-title reveal">
+            INTERACTIVE ZONE
+            <span class="title-subtitle">Touch stuff. Break stuff. Have fun.</span>
+        </h2>
+
+        <div class="interactive-grid">
+            <!-- Rate Sascha (rigged slider) -->
+            <div class="interactive-card reveal">
+                <h3>Rate Sascha (1-10)</h3>
+                <div class="rigged-slider-container">
+                    <input type="range" min="1" max="10" value="10" class="rigged-slider" id="rigged-slider">
+                    <div class="slider-value" id="slider-value">10/10</div>
+                    <p class="slider-message" id="slider-message">Perfect score. As expected.</p>
+                </div>
+            </div>
+
+            <!-- Are you cooler than Sascha? -->
+            <div class="interactive-card reveal">
+                <h3>Are You Cooler Than Sascha?</h3>
+                <div class="coolness-test">
+                    <input type="text" placeholder="Type your name..." class="name-input" id="name-input">
+                    <button class="test-btn" id="coolness-btn">FIND OUT</button>
+                    <p class="coolness-result" id="coolness-result"></p>
+                </div>
+            </div>
+
+            <!-- Don't Click This Button -->
+            <div class="interactive-card reveal" id="dont-click-zone">
+                <h3>Important Button</h3>
+                <button class="dont-click-btn" id="dont-click-btn">DO NOT CLICK THIS</button>
+                <p class="dont-click-message" id="dont-click-message"></p>
+            </div>
+
+            <!-- Visitor Counter -->
+            <div class="interactive-card reveal">
+                <h3>Visitor Counter</h3>
+                <div class="visitor-counter">
+                    <div class="counter-display" id="visitor-display">
+                        <span class="counter-digit">1</span>
+                        <span class="counter-digit">,</span>
+                        <span class="counter-digit">0</span>
+                        <span class="counter-digit">0</span>
+                        <span class="counter-digit">0</span>
+                        <span class="counter-digit">,</span>
+                        <span class="counter-digit">0</span>
+                        <span class="counter-digit">0</span>
+                        <span class="counter-digit">0</span>
+                        <span class="counter-digit">,</span>
+                        <span class="counter-digit">0</span>
+                        <span class="counter-digit">0</span>
+                        <span class="counter-digit">0</span>
+                    </div>
+                    <p class="visitor-text">You are the 1 BILLIONTH visitor! Congratulations! You win NOTHING!</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- BONUS: Dog Section -->
+    <!-- ============================================ -->
+    <section id="bonus" class="bonus-section">
+        <h2 class="section-title wobble-title reveal">
+            BONUS CONTENT
+            <span class="title-subtitle">You've scrolled this far. You deserve this.</span>
+        </h2>
+        <div class="bonus-grid">
+            <div class="bonus-card reveal">
+                <img src="content/sascha-dog.jpg" alt="Sascha with dog" loading="lazy">
+                <div class="bonus-caption">
+                    <h3>The Dog Whisperer</h3>
+                    <p>She doesn't just know a pony. She also has a dog. At this point she's basically running a zoo. A very blurry, very cozy zoo.</p>
+                </div>
+            </div>
+            <div class="bonus-card reveal">
+                <img src="content/sascha-hat.jpg" alt="Sascha with crochet hat" loading="lazy">
+                <div class="bonus-caption">
+                    <h3>The Fashion Icon</h3>
+                    <p>That hat? Homemade. Those vibes? Immaculate. The string still hanging? Fashion. You wouldn't understand.</p>
+                </div>
+            </div>
+            <div class="bonus-card reveal">
+                <img src="content/sascha-friends.jpg" alt="Sascha with friend" loading="lazy">
+                <div class="bonus-caption">
+                    <h3>Social Butterfly</h3>
+                    <p>Other people exist in Sascha's universe. They are blessed. The hoodie game is strong with this one.</p>
+                </div>
+            </div>
+            <div class="bonus-card reveal">
+                <img src="content/sascha-harbor.jpg" alt="Sascha at harbor" loading="lazy">
+                <div class="bonus-caption">
+                    <h3>The Adventurer</h3>
+                    <p>Boats in the background. Paddleboard at the ready. This is the face of someone who has conquered both land AND sea.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- FOOTER -->
+    <!-- ============================================ -->
+    <footer id="footer" class="footer">
+        <div class="footer-hearts" id="footer-hearts"></div>
+        <div class="footer-content">
+            <h2 class="footer-title">That's All, Folks!</h2>
+            <p class="footer-message">If you've made it this far, you now understand the full Sascha experience. There is no going back. You have been changed.</p>
+            <div class="appreciation-counter">
+                <p>Sascha Appreciation Clicks:</p>
+                <button id="click-counter-btn" class="click-btn">
+                    <span id="click-count">0</span>
+                </button>
+                <p class="click-subtitle" id="click-message">Click to appreciate!</p>
+            </div>
+            <p class="footer-credits">Made with way too many animations, questionable CSS decisions, and an unreasonable amount of love.</p>
+            <p class="footer-tiny">No ponies were harmed in the making of this website. Several cameras were.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

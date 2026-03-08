@@ -1,0 +1,3 @@
+# Skip original WhatsApp photos (renamed copies are tracked)
+content/WhatsApp*
+.idea/
