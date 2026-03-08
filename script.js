@@ -765,115 +765,97 @@ function initIntroMusic() {
         }
     });
 
-    // --- WAV GENERATION (renders audio to a buffer, plays via <audio>) ---
+    // --- WAV GENERATION: Für Elise by Beethoven ---
     function generateMusicWav() {
         const sampleRate = 44100;
-        const bpm = 138;
-        const beat = 60 / bpm;
-        const eighth = beat / 2;
+        const bpm = 80; // quarter note BPM — classic gentle tempo
+        const sixteenth = 60 / bpm / 4; // duration of one 16th note
 
-        // Note frequencies
+        // Note frequencies (including sharps for Für Elise)
         const N = {
-            C3: 130.81, D3: 146.83, E3: 164.81, F3: 174.61, G3: 196.00, A3: 220.00,
-            C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00,
-            C5: 523.25, D5: 587.33, E5: 659.25, G5: 783.99
+            A2: 110.00, E3: 164.81, A3: 220.00, B3: 246.94, C4: 261.63,
+            D4: 293.66, E4: 329.63, Gs4: 415.30, A4: 440.00, B4: 493.88,
+            C5: 523.25, D5: 587.33, Ds5: 622.25, E5: 659.25
         };
 
-        // Melody: [freq, dur_in_eighths] — fun bouncy tune
+        // Für Elise — A section (the iconic opening)
+        // Each entry: [frequency (null=rest), duration_in_16th_notes]
+        // In 3/8 time: each bar = 6 sixteenth notes
         const melody = [
-            [N.E5, 1], [N.D5, 1], [N.C5, 1], [N.D5, 1],
-            [N.E5, 1], [N.E5, 1], [N.E5, 2],
-            [N.D5, 1], [N.D5, 1], [N.D5, 2],
-            [N.E5, 1], [N.G5, 1], [N.G5, 2],
-            [N.E5, 1], [N.D5, 1], [N.C5, 1], [N.D5, 1],
-            [N.E5, 1], [N.E5, 1], [N.E5, 1], [N.C5, 1],
-            [N.D5, 1], [N.D5, 1], [N.E5, 1], [N.D5, 1],
-            [N.C5, 2], [null, 2],
+            // Pickup
+            [N.E5, 1], [N.Ds5, 1],
+            // Bar 1
+            [N.E5, 1], [N.Ds5, 1], [N.E5, 1], [N.B4, 1], [N.D5, 1], [N.C5, 1],
+            // Bar 2
+            [N.A4, 2], [null, 1], [N.C4, 1], [N.E4, 1], [N.A4, 1],
+            // Bar 3
+            [N.B4, 2], [null, 1], [N.E4, 1], [N.Gs4, 1], [N.B4, 1],
+            // Bar 4
+            [N.C5, 2], [null, 1], [N.E4, 1], [N.E5, 1], [N.Ds5, 1],
+            // Bar 5
+            [N.E5, 1], [N.Ds5, 1], [N.E5, 1], [N.B4, 1], [N.D5, 1], [N.C5, 1],
+            // Bar 6
+            [N.A4, 2], [null, 1], [N.C4, 1], [N.E4, 1], [N.A4, 1],
+            // Bar 7
+            [N.B4, 2], [null, 1], [N.E4, 1], [N.C5, 1], [N.B4, 1],
+            // Bar 8
+            [N.A4, 3], [null, 3],
         ];
 
-        // Bass: [freq, dur_in_eighths]
+        // Bass accompaniment (left hand, sustained notes)
         const bass = [
-            [N.C4, 4], [N.C4, 4],
-            [N.G3, 4], [N.C4, 4],
-            [N.C4, 4], [N.A3, 4],
-            [N.F3, 4], [N.G3, 4],
+            [null, 2],           // pickup rest
+            [N.A2, 6],           // bar 1
+            [N.A2, 6],           // bar 2
+            [N.E3, 6],           // bar 3
+            [N.A3, 6],           // bar 4
+            [N.A2, 6],           // bar 5
+            [N.A2, 6],           // bar 6
+            [N.E3, 6],           // bar 7
+            [N.A3, 3], [null, 3] // bar 8
         ];
 
-        // Chords: [freqs[], start_eighth, dur_eighths]
-        const chords = [
-            [[N.C4, N.E4, N.G4], 0, 8],
-            [[N.C4, N.E4, N.G4], 8, 8],
-            [[N.C4, N.E4, N.G4], 16, 8],
-            [[N.A3, N.C4, N.E4], 24, 8],
-        ];
-
-        const totalEighths = melody.reduce((s, m) => s + m[1], 0);
-        const duration = totalEighths * eighth;
+        const totalSixteenths = melody.reduce((s, m) => s + m[1], 0);
+        const duration = totalSixteenths * sixteenth;
         const numSamples = Math.floor(sampleRate * duration);
 
-        // Oscillator functions
-        function saw(freq, t) {
-            return ((freq * t) % 1) * 2 - 1;
-        }
-        function tri(freq, t) {
-            const p = (freq * t) % 1;
-            return 4 * Math.abs(p - 0.5) - 1;
-        }
-        function sqr(freq, t) {
-            return ((freq * t) % 1) < 0.5 ? 1 : -1;
-        }
-        function sine(freq, t) {
-            return Math.sin(2 * Math.PI * freq * t);
+        // Piano-like tone: fundamental + harmonics
+        function piano(freq, t) {
+            const f = 2 * Math.PI * freq;
+            return Math.sin(f * t) * 1.0
+                 + Math.sin(f * 2 * t) * 0.4
+                 + Math.sin(f * 3 * t) * 0.15
+                 + Math.sin(f * 4 * t) * 0.06;
         }
 
-        // Envelope: attack-sustain-release
-        function env(noteT, noteDur, attack, relStart) {
-            if (noteT < 0) return 0;
-            if (noteT > noteDur) return 0;
+        // Piano envelope: quick attack, decay to sustain, release
+        function pianoEnv(noteT, noteDur) {
+            if (noteT < 0 || noteT > noteDur) return 0;
+            const attack = 0.005;
+            const decayEnd = Math.min(noteDur * 0.2, 0.08);
+            const sustainLvl = 0.7;
+            const relStart = noteDur * 0.75;
+
             if (noteT < attack) return noteT / attack;
-            if (noteT < noteDur * relStart) return 1;
-            return 1 - (noteT - noteDur * relStart) / (noteDur * (1 - relStart));
+            if (noteT < decayEnd) return 1 - (1 - sustainLvl) * ((noteT - attack) / (decayEnd - attack));
+            if (noteT < relStart) return sustainLvl;
+            return sustainLvl * (1 - (noteT - relStart) / (noteDur - relStart));
         }
 
-        // Simple noise (seeded for consistency)
-        let noiseSeed = 1;
-        function noise() {
-            noiseSeed = (noiseSeed * 16807 + 0) % 2147483647;
-            return (noiseSeed / 2147483647) * 2 - 1;
-        }
-
-        // Pre-compute note timing for melody
+        // Pre-compute melody timing
         const melodyNotes = [];
         let melT = 0;
         for (const [freq, dur] of melody) {
-            melodyNotes.push({ freq, start: melT, dur: dur * eighth });
-            melT += dur * eighth;
+            melodyNotes.push({ freq, start: melT, dur: dur * sixteenth });
+            melT += dur * sixteenth;
         }
 
         // Pre-compute bass timing
         const bassNotes = [];
         let bassT = 0;
         for (const [freq, dur] of bass) {
-            bassNotes.push({ freq, start: bassT, dur: dur * eighth });
-            bassT += dur * eighth;
-        }
-
-        // Pre-compute chord timing
-        const chordNotes = [];
-        for (const [freqs, start, dur] of chords) {
-            chordNotes.push({ freqs, start: start * eighth, dur: dur * eighth });
-        }
-
-        // Kick timing (every quarter note)
-        const kickTimes = [];
-        for (let i = 0; i < totalEighths; i += 4) {
-            kickTimes.push(i * eighth);
-        }
-
-        // Hi-hat timing (every eighth note)
-        const hihatTimes = [];
-        for (let i = 0; i < totalEighths; i += 2) {
-            hihatTimes.push(i * eighth);
+            bassNotes.push({ freq, start: bassT, dur: dur * sixteenth });
+            bassT += dur * sixteenth;
         }
 
         // Render samples
@@ -883,58 +865,28 @@ function initIntroMusic() {
             const t = i / sampleRate;
             let sample = 0;
 
-            // MELODY — detuned sawtooth pair (chorus effect)
+            // MELODY (right hand) — piano tone
             for (const n of melodyNotes) {
                 if (n.freq === null) continue;
                 const nt = t - n.start;
                 if (nt >= 0 && nt < n.dur) {
-                    const e = env(nt, n.dur, 0.008, 0.75);
-                    sample += (saw(n.freq * 0.998, t) + saw(n.freq * 1.002, t)) * 0.18 * e;
+                    const e = pianoEnv(nt, n.dur);
+                    sample += piano(n.freq, t) * 0.30 * e;
                 }
             }
 
-            // BASS — triangle wave
+            // BASS (left hand) — piano tone, lower volume
             for (const n of bassNotes) {
                 if (n.freq === null) continue;
                 const nt = t - n.start;
                 if (nt >= 0 && nt < n.dur) {
-                    const e = env(nt, n.dur, 0.01, 0.65);
-                    sample += tri(n.freq, t) * 0.28 * e;
+                    const e = pianoEnv(nt, n.dur);
+                    sample += piano(n.freq, t) * 0.18 * e;
                 }
             }
 
-            // CHORDS — soft square pads
-            for (const c of chordNotes) {
-                const nt = t - c.start;
-                if (nt >= 0 && nt < c.dur) {
-                    const e = env(nt, c.dur, 0.02, 0.85);
-                    for (const freq of c.freqs) {
-                        sample += sqr(freq, t) * 0.035 * e;
-                    }
-                }
-            }
-
-            // KICK — sine sweep 300Hz -> 80Hz
-            for (const kt of kickTimes) {
-                const nt = t - kt;
-                if (nt >= 0 && nt < 0.15) {
-                    const kickFreq = 80 + 220 * Math.exp(-nt * 30);
-                    const e = Math.exp(-nt * 20);
-                    sample += sine(kickFreq, t) * 0.35 * e;
-                }
-            }
-
-            // HI-HAT — filtered noise burst
-            for (const ht of hihatTimes) {
-                const nt = t - ht;
-                if (nt >= 0 && nt < 0.04) {
-                    const e = Math.exp(-nt * 80);
-                    sample += noise() * 0.1 * e;
-                }
-            }
-
-            // Soft clip to prevent harsh distortion
-            sample = Math.tanh(sample * 1.3);
+            // Soft clip
+            sample = Math.tanh(sample * 1.5);
 
             samples[i] = sample;
         }
