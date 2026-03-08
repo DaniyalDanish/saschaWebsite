@@ -1422,6 +1422,105 @@ body {
 }
 
 /* ============================================
+   PORTUGAL SECTION
+   ============================================ */
+
+.portugal-section {
+    padding: 6rem 2rem;
+    background: linear-gradient(180deg, #1a1a2e, #0a2e1a, #1a1a2e);
+    position: relative;
+}
+
+.portugal-section::before {
+    content: '🇵🇹';
+    position: absolute;
+    top: 30px;
+    right: 30px;
+    font-size: 3rem;
+    opacity: 0.3;
+    animation: wiggle 2s ease infinite;
+}
+
+.portugal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+    max-width: 1200px;
+    margin: 3rem auto 0;
+}
+
+.portugal-card {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    height: 400px;
+    cursor: pointer;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+
+.portugal-card-hero {
+    grid-column: 1 / -1;
+    height: 500px;
+}
+
+.portugal-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s ease, filter 0.3s ease;
+}
+
+.portugal-card:hover img {
+    transform: scale(1.1);
+    filter: brightness(0.7);
+}
+
+.portugal-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 2rem;
+    background: linear-gradient(transparent, rgba(0,0,0,0.9));
+    transform: translateY(60%);
+    transition: transform 0.4s ease;
+}
+
+.portugal-card:hover .portugal-overlay {
+    transform: translateY(0);
+}
+
+.portugal-overlay h3 {
+    font-family: 'Bangers', cursive;
+    font-size: 1.4rem;
+    color: #7FFF00;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.03em;
+}
+
+.portugal-overlay p {
+    font-size: 0.95rem;
+    color: rgba(255,255,255,0.8);
+    line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    .portugal-grid {
+        grid-template-columns: 1fr;
+    }
+    .portugal-card-hero {
+        grid-column: 1;
+        height: 400px;
+    }
+    .portugal-card {
+        height: 350px;
+    }
+    .portugal-overlay {
+        transform: translateY(0);
+    }
+}
+
+/* ============================================
    TESTIMONIALS SECTION
    ============================================ */
 
