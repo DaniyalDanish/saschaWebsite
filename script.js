@@ -738,12 +738,8 @@ function initKonamiCode() {
    INTRO MUSIC (Web Audio API Synth Jingle)
    ============================================ */
 function initIntroMusic() {
-    let audioCtx = null;
+    let audio = null;
     let isPlaying = false;
-    let musicNodes = [];
-    let loopTimeout = null;
-    let compressor = null;
-    let masterGain = null;
 
     // Create the floating music toggle button
     const btn = document.createElement('button');
@@ -769,258 +765,237 @@ function initIntroMusic() {
         }
     });
 
-    function getAudioContext() {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-        return audioCtx;
-    }
+    // --- WAV GENERATION (renders audio to a buffer, plays via <audio>) ---
+    function generateMusicWav() {
+        const sampleRate = 44100;
+        const bpm = 138;
+        const beat = 60 / bpm;
+        const eighth = beat / 2;
 
-    function playMusic() {
-        const ctx = getAudioContext();
-        isPlaying = true;
-        btn.classList.add('playing');
-
-        // Audio chain: oscillators -> gains -> compressor -> master gain -> destination
-        compressor = ctx.createDynamicsCompressor();
-        compressor.threshold.value = -20;
-        compressor.knee.value = 10;
-        compressor.ratio.value = 4;
-        compressor.attack.value = 0.003;
-        compressor.release.value = 0.1;
-
-        masterGain = ctx.createGain();
-        masterGain.gain.value = 0.75;
-
-        compressor.connect(masterGain);
-        masterGain.connect(ctx.destination);
-
-        // Notes (frequencies)
+        // Note frequencies
         const N = {
-            C3: 130.81, D3: 146.83, E3: 164.81, F3: 174.61, G3: 196.00, A3: 220.00, B3: 246.94,
-            C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, B4: 493.88,
-            C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99
+            C3: 130.81, D3: 146.83, E3: 164.81, F3: 174.61, G3: 196.00, A3: 220.00,
+            C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00,
+            C5: 523.25, D5: 587.33, E5: 659.25, G5: 783.99
         };
 
-        const bpm = 132;
-        const beat = 60 / bpm;           // quarter note
-        const eighth = beat / 2;         // eighth note
-
-        // Catchy melody (think fun parade / circus energy)
-        // Each entry: [frequency, duration_in_eighths]  (null = rest)
+        // Melody: [freq, dur_in_eighths] — fun bouncy tune
         const melody = [
             [N.E5, 1], [N.D5, 1], [N.C5, 1], [N.D5, 1],
             [N.E5, 1], [N.E5, 1], [N.E5, 2],
-
             [N.D5, 1], [N.D5, 1], [N.D5, 2],
             [N.E5, 1], [N.G5, 1], [N.G5, 2],
-
             [N.E5, 1], [N.D5, 1], [N.C5, 1], [N.D5, 1],
             [N.E5, 1], [N.E5, 1], [N.E5, 1], [N.C5, 1],
-
             [N.D5, 1], [N.D5, 1], [N.E5, 1], [N.D5, 1],
             [N.C5, 2], [null, 2],
         ];
 
-        // Bass line (higher octave so phone speakers can play it)
-        const bassLine = [
+        // Bass: [freq, dur_in_eighths]
+        const bass = [
             [N.C4, 4], [N.C4, 4],
             [N.G3, 4], [N.C4, 4],
             [N.C4, 4], [N.A3, 4],
             [N.F3, 4], [N.G3, 4],
         ];
 
-        // Chord stabs (played as short arpeggios on off-beats)
+        // Chords: [freqs[], start_eighth, dur_eighths]
         const chords = [
-            // bar 1-2: C major (C E G)
-            { notes: [N.C4, N.E4, N.G4], start: 0,  dur: 8 },
-            { notes: [N.C4, N.E4, N.G4], start: 8,  dur: 8 },
-            // bar 3-4: C major, G major
-            { notes: [N.C4, N.E4, N.G4], start: 16, dur: 8 },
-            { notes: [N.A3, N.C4, N.E4], start: 24, dur: 8 },
+            [[N.C4, N.E4, N.G4], 0, 8],
+            [[N.C4, N.E4, N.G4], 8, 8],
+            [[N.C4, N.E4, N.G4], 16, 8],
+            [[N.A3, N.C4, N.E4], 24, 8],
         ];
 
         const totalEighths = melody.reduce((s, m) => s + m[1], 0);
-        const loopDuration = totalEighths * eighth;
+        const duration = totalEighths * eighth;
+        const numSamples = Math.floor(sampleRate * duration);
 
-        function scheduleLoop() {
-            if (!isPlaying) return;
-            const t0 = ctx.currentTime + 0.05;
+        // Oscillator functions
+        function saw(freq, t) {
+            return ((freq * t) % 1) * 2 - 1;
+        }
+        function tri(freq, t) {
+            const p = (freq * t) % 1;
+            return 4 * Math.abs(p - 0.5) - 1;
+        }
+        function sqr(freq, t) {
+            return ((freq * t) % 1) < 0.5 ? 1 : -1;
+        }
+        function sine(freq, t) {
+            return Math.sin(2 * Math.PI * freq * t);
+        }
 
-            // --- MELODY (sawtooth + slight detune for fatness) ---
-            let t = t0;
-            melody.forEach(([freq, dur]) => {
-                const noteDur = dur * eighth;
-                if (freq !== null) {
-                    // Primary sawtooth
-                    const osc1 = ctx.createOscillator();
-                    osc1.type = 'sawtooth';
-                    osc1.frequency.value = freq;
-                    osc1.detune.value = -6;
+        // Envelope: attack-sustain-release
+        function env(noteT, noteDur, attack, relStart) {
+            if (noteT < 0) return 0;
+            if (noteT > noteDur) return 0;
+            if (noteT < attack) return noteT / attack;
+            if (noteT < noteDur * relStart) return 1;
+            return 1 - (noteT - noteDur * relStart) / (noteDur * (1 - relStart));
+        }
 
-                    // Detuned copy for chorus
-                    const osc2 = ctx.createOscillator();
-                    osc2.type = 'sawtooth';
-                    osc2.frequency.value = freq;
-                    osc2.detune.value = 6;
+        // Simple noise (seeded for consistency)
+        let noiseSeed = 1;
+        function noise() {
+            noiseSeed = (noiseSeed * 16807 + 0) % 2147483647;
+            return (noiseSeed / 2147483647) * 2 - 1;
+        }
 
-                    const g = ctx.createGain();
-                    g.gain.setValueAtTime(0.22, t);
-                    g.gain.setValueAtTime(0.22, t + noteDur * 0.7);
-                    g.gain.exponentialRampToValueAtTime(0.005, t + noteDur - 0.01);
+        // Pre-compute note timing for melody
+        const melodyNotes = [];
+        let melT = 0;
+        for (const [freq, dur] of melody) {
+            melodyNotes.push({ freq, start: melT, dur: dur * eighth });
+            melT += dur * eighth;
+        }
 
-                    osc1.connect(g);
-                    osc2.connect(g);
-                    g.connect(compressor);
+        // Pre-compute bass timing
+        const bassNotes = [];
+        let bassT = 0;
+        for (const [freq, dur] of bass) {
+            bassNotes.push({ freq, start: bassT, dur: dur * eighth });
+            bassT += dur * eighth;
+        }
 
-                    osc1.start(t);
-                    osc1.stop(t + noteDur);
-                    osc2.start(t);
-                    osc2.stop(t + noteDur);
-                    musicNodes.push(osc1, osc2, g);
-                }
-                t += noteDur;
-            });
+        // Pre-compute chord timing
+        const chordNotes = [];
+        for (const [freqs, start, dur] of chords) {
+            chordNotes.push({ freqs, start: start * eighth, dur: dur * eighth });
+        }
 
-            // --- BASS (triangle, nice and warm) ---
-            let bt = t0;
-            bassLine.forEach(([freq, dur]) => {
-                const noteDur = dur * eighth;
-                if (freq !== null) {
-                    const osc = ctx.createOscillator();
-                    osc.type = 'triangle';
-                    osc.frequency.value = freq;
+        // Kick timing (every quarter note)
+        const kickTimes = [];
+        for (let i = 0; i < totalEighths; i += 4) {
+            kickTimes.push(i * eighth);
+        }
 
-                    const g = ctx.createGain();
-                    g.gain.setValueAtTime(0.35, bt);
-                    g.gain.setValueAtTime(0.30, bt + noteDur * 0.6);
-                    g.gain.exponentialRampToValueAtTime(0.005, bt + noteDur - 0.02);
+        // Hi-hat timing (every eighth note)
+        const hihatTimes = [];
+        for (let i = 0; i < totalEighths; i += 2) {
+            hihatTimes.push(i * eighth);
+        }
 
-                    osc.connect(g);
-                    g.connect(compressor);
+        // Render samples
+        const samples = new Float32Array(numSamples);
 
-                    osc.start(bt);
-                    osc.stop(bt + noteDur);
-                    musicNodes.push(osc, g);
-                }
-                bt += noteDur;
-            });
+        for (let i = 0; i < numSamples; i++) {
+            const t = i / sampleRate;
+            let sample = 0;
 
-            // --- CHORD PADS (soft square chords for warmth) ---
-            chords.forEach(({ notes, start, dur }) => {
-                const ct = t0 + start * eighth;
-                const cDur = dur * eighth;
-                notes.forEach(freq => {
-                    const osc = ctx.createOscillator();
-                    osc.type = 'square';
-                    osc.frequency.value = freq;
-
-                    const g = ctx.createGain();
-                    g.gain.setValueAtTime(0.05, ct);
-                    g.gain.setValueAtTime(0.05, ct + cDur * 0.8);
-                    g.gain.exponentialRampToValueAtTime(0.002, ct + cDur - 0.01);
-
-                    osc.connect(g);
-                    g.connect(compressor);
-
-                    osc.start(ct);
-                    osc.stop(ct + cDur);
-                    musicNodes.push(osc, g);
-                });
-            });
-
-            // --- PERCUSSION (kicks + hi-hats via noise) ---
-            for (let i = 0; i < totalEighths; i++) {
-                const pt = t0 + i * eighth;
-                const isKick = (i % 4 === 0);
-                const isHihat = (i % 2 === 0);
-
-                if (isKick) {
-                    // Kick: short sine sweep
-                    const kickOsc = ctx.createOscillator();
-                    kickOsc.type = 'sine';
-                    kickOsc.frequency.setValueAtTime(300, pt);
-                    kickOsc.frequency.exponentialRampToValueAtTime(60, pt + 0.12);
-
-                    const kickG = ctx.createGain();
-                    kickG.gain.setValueAtTime(0.4, pt);
-                    kickG.gain.exponentialRampToValueAtTime(0.005, pt + 0.15);
-
-                    kickOsc.connect(kickG);
-                    kickG.connect(compressor);
-                    kickOsc.start(pt);
-                    kickOsc.stop(pt + 0.15);
-                    musicNodes.push(kickOsc, kickG);
-                }
-
-                if (isHihat) {
-                    // Hi-hat: short noise burst
-                    const bufLen = Math.floor(ctx.sampleRate * 0.04);
-                    const noiseBuf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
-                    const data = noiseBuf.getChannelData(0);
-                    for (let s = 0; s < bufLen; s++) {
-                        data[s] = (Math.random() * 2 - 1);
-                    }
-                    const noise = ctx.createBufferSource();
-                    noise.buffer = noiseBuf;
-
-                    // Bandpass filter to make it sound like a hi-hat
-                    const hiFilter = ctx.createBiquadFilter();
-                    hiFilter.type = 'bandpass';
-                    hiFilter.frequency.value = 8000;
-                    hiFilter.Q.value = 1;
-
-                    const hg = ctx.createGain();
-                    hg.gain.setValueAtTime(isKick ? 0.08 : 0.12, pt);
-                    hg.gain.exponentialRampToValueAtTime(0.001, pt + 0.04);
-
-                    noise.connect(hiFilter);
-                    hiFilter.connect(hg);
-                    hg.connect(compressor);
-                    noise.start(pt);
-                    musicNodes.push(noise, hiFilter, hg);
+            // MELODY — detuned sawtooth pair (chorus effect)
+            for (const n of melodyNotes) {
+                if (n.freq === null) continue;
+                const nt = t - n.start;
+                if (nt >= 0 && nt < n.dur) {
+                    const e = env(nt, n.dur, 0.008, 0.75);
+                    sample += (saw(n.freq * 0.998, t) + saw(n.freq * 1.002, t)) * 0.18 * e;
                 }
             }
 
-            // Schedule next loop
-            loopTimeout = setTimeout(scheduleLoop, (loopDuration - 0.1) * 1000);
+            // BASS — triangle wave
+            for (const n of bassNotes) {
+                if (n.freq === null) continue;
+                const nt = t - n.start;
+                if (nt >= 0 && nt < n.dur) {
+                    const e = env(nt, n.dur, 0.01, 0.65);
+                    sample += tri(n.freq, t) * 0.28 * e;
+                }
+            }
+
+            // CHORDS — soft square pads
+            for (const c of chordNotes) {
+                const nt = t - c.start;
+                if (nt >= 0 && nt < c.dur) {
+                    const e = env(nt, c.dur, 0.02, 0.85);
+                    for (const freq of c.freqs) {
+                        sample += sqr(freq, t) * 0.035 * e;
+                    }
+                }
+            }
+
+            // KICK — sine sweep 300Hz -> 80Hz
+            for (const kt of kickTimes) {
+                const nt = t - kt;
+                if (nt >= 0 && nt < 0.15) {
+                    const kickFreq = 80 + 220 * Math.exp(-nt * 30);
+                    const e = Math.exp(-nt * 20);
+                    sample += sine(kickFreq, t) * 0.35 * e;
+                }
+            }
+
+            // HI-HAT — filtered noise burst
+            for (const ht of hihatTimes) {
+                const nt = t - ht;
+                if (nt >= 0 && nt < 0.04) {
+                    const e = Math.exp(-nt * 80);
+                    sample += noise() * 0.1 * e;
+                }
+            }
+
+            // Soft clip to prevent harsh distortion
+            sample = Math.tanh(sample * 1.3);
+
+            samples[i] = sample;
         }
 
-        scheduleLoop();
+        // Encode as 16-bit WAV
+        const buffer = new ArrayBuffer(44 + numSamples * 2);
+        const view = new DataView(buffer);
+
+        function writeStr(offset, str) {
+            for (let i = 0; i < str.length; i++) {
+                view.setUint8(offset + i, str.charCodeAt(i));
+            }
+        }
+
+        writeStr(0, 'RIFF');
+        view.setUint32(4, 36 + numSamples * 2, true);
+        writeStr(8, 'WAVE');
+        writeStr(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);   // PCM
+        view.setUint16(22, 1, true);   // mono
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true);
+        view.setUint16(32, 2, true);   // block align
+        view.setUint16(34, 16, true);  // bits per sample
+        writeStr(36, 'data');
+        view.setUint32(40, numSamples * 2, true);
+
+        for (let i = 0; i < numSamples; i++) {
+            const s = Math.max(-1, Math.min(1, samples[i]));
+            view.setInt16(44 + i * 2, s * 32767, true);
+        }
+
+        return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    function playMusic() {
+        if (!audio) {
+            // Generate WAV and create audio element (one-time)
+            const blob = generateMusicWav();
+            audio = new Audio(URL.createObjectURL(blob));
+            audio.loop = true;
+            audio.volume = 0.8;
+        }
+        audio.play().then(() => {
+            isPlaying = true;
+            btn.classList.add('playing');
+        }).catch(() => {
+            // Autoplay blocked — try on next interaction
+            isPlaying = false;
+            btn.classList.remove('playing');
+        });
     }
 
     function stopMusic() {
+        if (audio) {
+            audio.pause();
+            audio.currentTime = 0;
+        }
         isPlaying = false;
         btn.classList.remove('playing');
-
-        if (loopTimeout) {
-            clearTimeout(loopTimeout);
-            loopTimeout = null;
-        }
-
-        // Fade out gracefully
-        if (masterGain && audioCtx) {
-            try {
-                masterGain.gain.setValueAtTime(masterGain.gain.value, audioCtx.currentTime);
-                masterGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
-            } catch (e) { /* ignore */ }
-        }
-
-        // Clean up nodes after fade
-        setTimeout(() => {
-            musicNodes.forEach(node => {
-                try {
-                    if (node.stop) node.stop();
-                    node.disconnect();
-                } catch (e) { /* already stopped */ }
-            });
-            musicNodes = [];
-            if (compressor) { try { compressor.disconnect(); } catch(e) {} compressor = null; }
-            if (masterGain) { try { masterGain.disconnect(); } catch(e) {} masterGain = null; }
-        }, 350);
     }
 }
 
